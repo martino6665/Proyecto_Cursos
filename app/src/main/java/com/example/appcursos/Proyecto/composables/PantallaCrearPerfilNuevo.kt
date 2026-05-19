@@ -14,18 +14,24 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.appcursos.Proyecto.viewmodel.RegistroViewModel
 import com.example.appcursos.ui.theme.AppCursosTheme
 
 @Composable
-fun PantallaCrearPerfilNuevo(navController: NavHostController) {
+fun PantallaCrearPerfilNuevo(
+    navController: NavHostController,
+    viewModel: RegistroViewModel = viewModel() // Integramos el nuevo ViewModel
+) {
     var usuario by remember { mutableStateOf("") }
     var nombre by remember { mutableStateOf("") }
     var apellidoPaterno by remember { mutableStateOf("") }
@@ -49,7 +55,20 @@ fun PantallaCrearPerfilNuevo(navController: NavHostController) {
                 Spacer(modifier = Modifier.height(40.dp))
                 Text(text = "Crea tu Perfil", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
                 Text(text = "Información oficial para VisionEducation", fontSize = 14.sp, color = MaterialTheme.colorScheme.outline)
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            // MEJORA: Mostrar errores del servidor dinámicamente en pantalla
+            if (viewModel.mensajeError.isNotEmpty()) {
+                item {
+                    Text(
+                        text = viewModel.mensajeError,
+                        color = Color.Red,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
             }
 
             item {
@@ -112,14 +131,40 @@ fun PantallaCrearPerfilNuevo(navController: NavHostController) {
 
             item {
                 Spacer(modifier = Modifier.height(20.dp))
-                // --- CAMBIO SOLICITADO AQUÍ ---
+
+                // --- CAMBIO APLICADO AQUÍ PARA QUE HAGA ESPEJO CON VISUAL ---
                 Button(
-                    onClick = { navController.navigate("dashboard") },
+                    onClick = {
+                        viewModel.registrarUsuario(
+                            rol = rolSeleccionado,
+                            usuario = usuario,
+                            nombre = nombre,
+                            paterno = apellidoPaterno,
+                            materno = apellidoMaterno,
+                            fecha = fechaNacimiento,
+                            pass = password,
+                            onSuccess = {
+                                // Al registrar con éxito en Render, mandamos al Login
+                                // para obligar la validación por seguridad
+                                navController.navigate("login") {
+                                    popUpTo("inicio") { inclusive = false }
+                                }
+                            }
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    enabled = !viewModel.cargando // Bloquea clics repetidos mientras procesa
                 ) {
-                    val textoMostrar = if (rolSeleccionado == "profesor") "Maestro" else "Alumno"
-                    Text("Registrar $textoMostrar", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    if (viewModel.cargando) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        val textoMostrar = if (rolSeleccionado == "profesor") "Maestro" else "Alumno"
+                        Text("Registrar $textoMostrar", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 

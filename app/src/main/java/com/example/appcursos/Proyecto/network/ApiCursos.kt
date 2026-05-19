@@ -1,39 +1,52 @@
 package com.example.appcursos.Proyecto.network
 
 import com.example.appcursos.Proyecto.data.*
-import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiCursos {
 
-    // 1. Iniciar Sesión (Ya lo tienes)
+    // --- ACCESO Y LOGIN ---
     @POST("login")
     suspend fun iniciarSesion(@Body request: LoginRequest): LoginResponse
 
-    // 2. Ver cursos del profesor logueado
-    // Coincide con: @app.get("/profesores/{maestro_id}/mis-cursos")
+
+    // --- REGISTROS (Coincide al 100% con tu Swagger UI) ---
+    @POST("registro/alumno")
+    suspend fun registrar_alumno(@Body alumno: AlumnoCreate): AlumnoResponse
+
+    @POST("registro/profesor")
+    suspend fun registrar_profesor(@Body profesor: ProfesorCreate): ProfesorResponse
+
+
+    // --- MÓDULO PROFESORES ---
     @GET("profesores/{maestro_id}/mis-cursos")
-    suspend fun obtenerMisCursos(@Path("maestro_id") maestroId: Int): List<CursoResponse>
+    suspend fun ver_materias_asignadas(
+        @Path("maestro_id") maestro_id: Int
+    ): List<CursoResponse>
 
-    // 3. Crear un nuevo curso
-    // Coincide con: @app.post("/profesores/cursos/crear")
     @POST("profesores/cursos/crear")
-    suspend fun crearCurso(@Body curso: CursoCreate): CursoResponse
+    suspend fun crear_materia(@Body curso: CursoCreate): CursoResponse
 
-    // 4. Editar curso
-    // Coincide con: @app.put("/profesores/cursos/editar/{curso_id}/{maestro_id}")
-    @PUT("profesores/cursos/editar/{curso_id}/{maestro_id}")
-    suspend fun editarCurso(
-        @Path("curso_id") cursoId: Int,
-        @Path("maestro_id") maestroId: Int,
-        @Body curso: CursoCreate
-    ): CursoResponse
-
-    // 5. Eliminar curso
-    // Coincide con: @app.delete("/profesores/cursos/eliminar/{curso_id}/{maestro_id}")
     @DELETE("profesores/cursos/eliminar/{curso_id}/{maestro_id}")
-    suspend fun eliminarCurso(
-        @Path("curso_id") cursoId: Int,
-        @Path("maestro_id") maestroId: Int
+    suspend fun eliminar_materia(
+        @Path("curso_id") curso_id: Int,
+        @Path("maestro_id") maestro_id: Int
     ): SimpleResponse
+
+    @PUT("profesores/calificar/{alumno_id}/{curso_id}")
+    suspend fun calificar_alumno(
+        @Path("alumno_id") alumno_id: Int,
+        @Path("curso_id") curso_id: Int,
+        @Body calificacion: CalificacionUpdate
+    ): SimpleResponse
+
+
+    // --- MÓDULO ALUMNOS / INSCRIPCIONES ---
+    @GET("alumnos/{alumno_id}/mis-cursos")
+    suspend fun ver_cursos_inscritos(
+        @Path("alumno_id") alumno_id: Int
+    ): List<CursoResponse>
+
+    @POST("alumnos/inscribir")
+    suspend fun inscribirse(@Body inscripcion: InscripcionRequest): InscripcionResponse
 }

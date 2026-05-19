@@ -9,8 +9,8 @@ object RetrofitCursos {
     private const val BASE_URL = "https://proyecto-53iu.onrender.com/"
 
     private val client = OkHttpClient.Builder()
-        .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
+        .connectTimeout(90, TimeUnit.SECONDS)
+        .readTimeout(90, TimeUnit.SECONDS)
         .build()
 
     val apiCursosService: ApiCursos by lazy {

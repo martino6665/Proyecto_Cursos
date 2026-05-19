@@ -1,10 +1,10 @@
-package com.example.appcursos.composables
+package com.example.appcursos.Proyecto.composables
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,6 +22,9 @@ import com.example.appcursos.ui.theme.AppCursosTheme
 
 @Composable
 fun PantallaInicio(navController: NavHostController) {
+    // Bandera para evitar que se dupliquen las pantallas al presionar rápido
+    var clickBloqueado by remember { mutableStateOf(false) }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -75,9 +78,14 @@ fun PantallaInicio(navController: NavHostController) {
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                 )
 
-                // --- MODIFICACIÓN AQUÍ: AHORA VA A "login" ---
+                // Botón Iniciar Sesión -> Va a la aduana de login en espejo con tu Main
                 Button(
-                    onClick = { navController.navigate("login") }, // Antes decía "dashboard"
+                    onClick = {
+                        if (!clickBloqueado) {
+                            clickBloqueado = true
+                            navController.navigate("login")
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -95,9 +103,14 @@ fun PantallaInicio(navController: NavHostController) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Botón Registro -> Navega a la pantalla de registro
+                // Botón Registro -> Navega al formulario con discriminación de Rol
                 OutlinedButton(
-                    onClick = { navController.navigate("registro") },
+                    onClick = {
+                        if (!clickBloqueado) {
+                            clickBloqueado = true
+                            navController.navigate("registro")
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -113,6 +126,11 @@ fun PantallaInicio(navController: NavHostController) {
                 }
             }
         }
+    }
+
+    // Efecto para liberar los botones si el usuario regresa a esta pantalla
+    LaunchedEffect(Unit) {
+        clickBloqueado = false
     }
 }
 
