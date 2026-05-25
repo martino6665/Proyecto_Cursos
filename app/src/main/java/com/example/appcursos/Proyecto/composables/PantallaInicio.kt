@@ -1,5 +1,6 @@
 package com.example.appcursos.Proyecto.composables
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +20,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.appcursos.R
 import com.example.appcursos.ui.theme.AppCursosTheme
+import kotlinx.coroutines.delay
 
 @Composable
 fun PantallaInicio(navController: NavHostController) {
@@ -78,7 +80,7 @@ fun PantallaInicio(navController: NavHostController) {
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                 )
 
-                // Botón Iniciar Sesión -> Va a la aduana de login en espejo con tu Main
+                // Botón Iniciar Sesión
                 Button(
                     onClick = {
                         if (!clickBloqueado) {
@@ -103,7 +105,7 @@ fun PantallaInicio(navController: NavHostController) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Botón Registro -> Navega al formulario con discriminación de Rol
+                // Botón Registro (CORREGIDO: Sintaxis del borde compatible con Material 3)
                 OutlinedButton(
                     onClick = {
                         if (!clickBloqueado) {
@@ -115,7 +117,7 @@ fun PantallaInicio(navController: NavHostController) {
                         .fillMaxWidth()
                         .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(width = 2.dp)
+                    border = BorderStroke(width = 2.dp, color = MaterialTheme.colorScheme.primary)
                 ) {
                     Text(
                         "Crear Perfil Nuevo",
@@ -128,9 +130,12 @@ fun PantallaInicio(navController: NavHostController) {
         }
     }
 
-    // Efecto para liberar los botones si el usuario regresa a esta pantalla
-    LaunchedEffect(Unit) {
-        clickBloqueado = false
+    // Efecto de seguridad mejorado para liberar el botón al regresar o después de un pequeño delay
+    LaunchedEffect(clickBloqueado) {
+        if (clickBloqueado) {
+            delay(1000) // Si la navegación tarda, libera el botón tras 1 segundo automáticamente
+            clickBloqueado = false
+        }
     }
 }
 

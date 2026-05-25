@@ -2,9 +2,9 @@ package com.example.appcursos.Proyecto.data
 
 import com.google.gson.annotations.SerializedName
 
-// ==========================================
-// --- MOLDES PARA REGISTROS (ALUMNOS Y PROFESORES) ---
-// ==========================================
+// ==============================================================================
+// --- 👤 MOLDES PARA REGISTROS (ALUMNOS Y PROFESORES) ---
+// ==============================================================================
 
 data class AlumnoCreate(
     @SerializedName("nombre_usuario") val nombre_usuario: String,
@@ -44,16 +44,18 @@ data class ProfesorResponse(
     @SerializedName("rol") val rol: String
 )
 
-// ==========================================
-// --- MOLDES PARA GESTIÓN DE CURSOS Y ACCIONES ---
-// ==========================================
+
+// ==============================================================================
+// --- 📚 MOLDES PARA GESTIÓN DE CURSOS Y ACCIONES ---
+// ==============================================================================
 
 data class CursoCreate(
     @SerializedName("nombre_del_curso") val nombre_del_curso: String,
     @SerializedName("id_del_profesor") val id_del_profesor: Int,
     @SerializedName("descripcion") val descripcion: String,
     @SerializedName("fecha_de_inicio") val fecha_de_inicio: String,
-    @SerializedName("fecha_de_fin") val fecha_de_fin: String
+    @SerializedName("fecha_de_fin") val fecha_de_fin: String,
+    @SerializedName("color_banner") val color_banner: String
 )
 
 data class CursoResponse(
@@ -62,14 +64,15 @@ data class CursoResponse(
     @SerializedName("id_del_profesor") val id_del_profesor: Int,
     @SerializedName("descripcion") val descripcion: String,
     @SerializedName("fecha_de_inicio") val fecha_de_inicio: String,
-    @SerializedName("fecha_de_fin") val fecha_de_fin: String
+    @SerializedName("fecha_de_fin") val fecha_de_fin: String,
+    @SerializedName("color_banner") val color_banner: String? = null
 )
 
 data class CalificacionUpdate(
     @SerializedName("nota") val nota: Int
 )
 
-data class InscripcionRequest(
+data class InscripcionCreate(
     @SerializedName("alumno_id") val alumno_id: Int,
     @SerializedName("curso_id") val curso_id: Int
 )
@@ -86,9 +89,10 @@ data class SimpleResponse(
     @SerializedName("mensaje") val mensaje: String
 )
 
-// ==========================================
-// --- MOLDES ADICIONALES PARA CONSULTAS COMPUESTAS ---
-// ==========================================
+
+// ==============================================================================
+// --- 🗂️ MOLDES ADICIONALES PARA CONSULTAS COMPUESTAS ---
+// ==============================================================================
 
 data class AlumnoCursoDetalleResponse(
     @SerializedName("inscripcion_id") val inscripcionId: Int,
@@ -109,10 +113,74 @@ data class AlumnoInscritoResponse(
 data class LoginResponse(
     @SerializedName("estado") val estado: String,
     @SerializedName("mensaje") val mensaje: String,
-    @SerializedName("rol") val rol: String? = null
+    @SerializedName("rol") val rol: String? = null,
+    @SerializedName("usuario_id") val usuario_id: Int? = null
 )
 
 data class LoginRequest(
     @SerializedName("nombre_usuario") val nombre_usuario: String,
     @SerializedName("password") val password: String
+)
+
+
+// ==============================================================================
+// --- 📝 NUEVOS MOLDES: ACTIVIDADES, ENTREGAS Y EVALUACIONES (VISIONEDUCATION) ---
+// ==============================================================================
+
+data class ActividadCreate(
+    @SerializedName("titulo") val titulo: String,
+    @SerializedName("descripcion") val descripcion: String?,
+    @SerializedName("puntos_maximos") val puntos_maximos: Float,
+    @SerializedName("fecha_inicio") val fecha_inicio: String?,
+    @SerializedName("fecha_limite") val fecha_limite: String?
+)
+
+data class ActividadResponse(
+    @SerializedName("id") val id: Int,
+    @SerializedName("curso_id") val curso_id: Int,
+    @SerializedName("titulo") val titulo: String,
+    @SerializedName("descripcion") val descripcion: String?,
+    @SerializedName("puntos_maximos") val puntos_maximos: Float,
+    // MEJORA: Recibimos las fechas desde el servidor
+    @SerializedName("fecha_inicio") val fecha_inicio: String?,
+    @SerializedName("fecha_limite") val fecha_limite: String?
+)
+
+// ==============================================================================
+// --- 📤 MOLDES PARA ENTREGAS Y CALIFICACIONES ---
+// ==============================================================================
+
+data class EntregaCreate(
+    @SerializedName("contenido_entrega") val contenido_entrega: String
+)
+
+data class EntregaResponse(
+    @SerializedName("id") val id: Int,
+    @SerializedName("actividad_id") val actividad_id: Int,
+    @SerializedName("alumno_id") val alumno_id: Int,
+    @SerializedName("contenido_entrega") val contenido_entrega: String,
+    @SerializedName("fecha_entrega") val fecha_entrega: String,
+    @SerializedName("nota_obtenida") val nota_obtenida: Float? = null,
+    @SerializedName("comentario_profesor") val comentario_profesor: String? = null,
+    // MEJORA: Incluimos el título de la actividad en la respuesta para facilitar la visualización en la agenda
+    @SerializedName("titulo_actividad") val titulo_actividad: String? = null
+)
+
+data class CalificarEntregaRequest(
+    @SerializedName("nota_obtenida") val nota_obtenida: Float,
+    @SerializedName("comentario_profesor") val comentario_profesor: String? = null
+)
+
+// ==============================================================================
+// --- 👤 MOLDES DE USUARIO ---
+// ==============================================================================
+
+data class UsuarioResponse(
+    @SerializedName("id") val id: Int,
+    @SerializedName("nombre_usuario") val nombre_usuario: String,
+    @SerializedName("nombre") val nombre: String,
+    @SerializedName("apellido_paterno") val apellido_paterno: String,
+    @SerializedName("apellido_materno") val apellido_materno: String,
+    @SerializedName("fecha_nacimiento") val fecha_nacimiento: String,
+    @SerializedName("rol") val rol: String
 )

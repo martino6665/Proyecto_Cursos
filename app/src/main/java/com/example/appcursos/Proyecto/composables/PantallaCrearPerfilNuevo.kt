@@ -1,5 +1,6 @@
 package com.example.appcursos.Proyecto.composables
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
@@ -26,18 +27,29 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.appcursos.Proyecto.viewmodel.RegistroViewModel
 import com.example.appcursos.ui.theme.AppCursosTheme
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaCrearPerfilNuevo(
     navController: NavHostController,
-    viewModel: RegistroViewModel = viewModel() // Integramos el nuevo ViewModel
+    viewModel: RegistroViewModel = viewModel()
 ) {
     var usuario by remember { mutableStateOf("") }
     var nombre by remember { mutableStateOf("") }
     var apellidoPaterno by remember { mutableStateOf("") }
     var apellidoMaterno by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    // Almacena la fecha seleccionada en formato visible para el usuario
     var fechaNacimiento by remember { mutableStateOf("") }
+
+    // Estados para el control del Calendario (DatePickerDialog)
+    var mostrarCalendario by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
 
     val opcionesRoles = listOf("alumno", "profesor")
     val (rolSeleccionado, onRolSelected) = remember { mutableStateOf(opcionesRoles[0]) }
@@ -58,7 +70,6 @@ fun PantallaCrearPerfilNuevo(
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
-            // MEJORA: Mostrar errores del servidor dinámicamente en pantalla
             if (viewModel.mensajeError.isNotEmpty()) {
                 item {
                     Text(
@@ -105,17 +116,29 @@ fun PantallaCrearPerfilNuevo(
             item {
                 OutlinedTextField(value = apellidoMaterno, onValueChange = { apellidoMaterno = it }, label = { Text("Apellido Materno") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), singleLine = true)
             }
+
+            // --- CAMPO DE FECHA CON CALENDARIO INCRUSTADO ---
             item {
-                OutlinedTextField(
-                    value = fechaNacimiento,
-                    onValueChange = { fechaNacimiento = it },
-                    label = { Text("Fecha Nacimiento (YYYY-MM-DD)") },
-                    leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    singleLine = true
-                )
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = fechaNacimiento,
+                        onValueChange = { }, // Bloqueado para que no escriban texto basura
+                        label = { Text("Fecha de Nacimiento") },
+                        leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        readOnly = true, // Evita que se despliegue el teclado normal
+                        enabled = true
+                    )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { mostrarCalendario = true }
+                    )
+                }
             }
+
             item {
                 OutlinedTextField(
                     value = password,
@@ -132,7 +155,7 @@ fun PantallaCrearPerfilNuevo(
             item {
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // --- CAMBIO APLICADO AQUÍ PARA QUE HAGA ESPEJO CON VISUAL ---
+                // --- MEJORA APLICADA AQUÍ: ACCIÓN Y BLOQUEOS SINCRONIZADOS ---
                 Button(
                     onClick = {
                         viewModel.registrarUsuario(
@@ -144,8 +167,7 @@ fun PantallaCrearPerfilNuevo(
                             fecha = fechaNacimiento,
                             pass = password,
                             onSuccess = {
-                                // Al registrar con éxito en Render, mandamos al Login
-                                // para obligar la validación por seguridad
+                                // El callback onSuccess SOLO se dispara si Render guardó el registro con éxito
                                 navController.navigate("login") {
                                     popUpTo("inicio") { inclusive = false }
                                 }
@@ -154,7 +176,8 @@ fun PantallaCrearPerfilNuevo(
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
-                    enabled = !viewModel.cargando // Bloquea clics repetidos mientras procesa
+                    // MEJORA: No deja presionar si está cargando o si faltan datos clave en la UI
+                    enabled = !viewModel.cargando && usuario.isNotBlank() && password.isNotBlank()
                 ) {
                     if (viewModel.cargando) {
                         CircularProgressIndicator(
@@ -174,6 +197,35 @@ fun PantallaCrearPerfilNuevo(
                 }
                 Spacer(modifier = Modifier.height(40.dp))
             }
+        }
+    }
+
+    // --- DIÁLOGO DEL CALENDARIO NATIVO (MATERIAL 3) ---
+    if (mostrarCalendario) {
+        DatePickerDialog(
+            onDismissRequest = { mostrarCalendario = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val seleccionMilis = datePickerState.selectedDateMillis
+                        if (seleccionMilis != null) {
+                            val formatoLocal = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                            formatoLocal.timeZone = TimeZone.getTimeZone("UTC")
+                            fechaNacimiento = formatoLocal.format(Date(seleccionMilis))
+                        }
+                        mostrarCalendario = false
+                    }
+                ) {
+                    Text("Aceptar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarCalendario = false }) {
+                    Text("Cancelar")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
         }
     }
 }

@@ -6,22 +6,18 @@ import androidx.lifecycle.viewModelScope
 import com.example.appcursos.Proyecto.data.LoginRequest
 import com.example.appcursos.Proyecto.network.RetrofitCursos
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 class LoginViewModel : ViewModel() {
 
-    // Estados para controlar la interfaz de usuario de forma reactiva
     var cargando by mutableStateOf(false)
     var mensajeError by mutableStateOf("")
 
     /**
-     * Intenta iniciar sesión en VisionEducation conectándose al servidor de Render.
-     * @param usuario El nombre de usuario ingresado en el campo de texto.
-     * @param pass La contraseña ingresada.
-     * @param onSuccess Callback que devuelve el ROL ("alumno" o "profesor") recuperado del backend.
+     * Intenta iniciar sesión regresando el ROL y el ID REAL del usuario.
      */
-    fun login(usuario: String, pass: String, onSuccess: (String) -> Unit) {
+    fun login(usuario: String, pass: String, onSuccess: (String, Int) -> Unit) {
 
-        // --- 1. VALIDACIÓN DE ENTRADA PREVENTIVA ---
         val userLimpio = usuario.trim()
         val passLimpia = pass.trim()
 
@@ -34,7 +30,6 @@ class LoginViewModel : ViewModel() {
             cargando = true
             mensajeError = ""
             try {
-                // --- 2. PETICIÓN A LA API EN LÍNEA RECTA ---
                 val request = LoginRequest(
                     nombre_usuario = userLimpio,
                     password = passLimpia
@@ -42,16 +37,19 @@ class LoginViewModel : ViewModel() {
 
                 val response = RetrofitCursos.apiCursosService.iniciarSesion(request)
 
-                // --- 3. PROCESAMIENTO DE RESPUESTA POR ROLES ---
                 if (response.estado == "Exitoso") {
-                    // Si el rol viene nulo por alguna inconsistencia, por defecto es alumno
-                    onSuccess(response.rol ?: "alumno")
+                    // COINCIDENCIA ABSOLUTA: Lee la variable exacta del CursoModel modificado
+                    val idReal = response.usuario_id ?: 0
+                    val rolReal = response.rol ?: "alumno"
+
+                    onSuccess(rolReal, idReal)
                 } else {
                     mensajeError = response.mensaje
                 }
+            } catch (e: HttpException) {
+                mensajeError = "Credenciales inválidas o datos incorrectos"
             } catch (e: Exception) {
-                // Captura fallas de red, timeouts o caídas temporales de Render
-                mensajeError = "Error de conexión: No se pudo contactar con el servidor"
+                mensajeError = "Error de conexión: El servidor está despertando, intenta de nuevo"
             } finally {
                 cargando = false
             }

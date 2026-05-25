@@ -1,5 +1,6 @@
 package com.example.appcursos.Proyecto.viewmodel
 
+import android.util.Log // Importación obligatoria para usar logs en Android
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,6 +9,8 @@ import com.example.appcursos.Proyecto.data.ProfesorCreate
 import com.example.appcursos.Proyecto.network.RetrofitCursos
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 class RegistroViewModel : ViewModel() {
@@ -22,7 +25,7 @@ class RegistroViewModel : ViewModel() {
         val formatosEntrada = arrayOf(
             SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()),
             SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()),
-            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) // Por si ya viene correcto
+            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         )
 
         val formatoSalida = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -37,7 +40,45 @@ class RegistroViewModel : ViewModel() {
                 // Sigue probando el siguiente formato si este falla
             }
         }
-        return fechaInput.trim() // Si no pudo parsear nada, lo manda tal cual para que valide el servidor
+        return fechaInput.trim()
+    }
+
+    /**
+     * Valida de forma matemática si el usuario tiene menos de 13 años respecto a la fecha actual.
+     */
+    private fun esMenorDe13Anos(fechaInput: String): Boolean {
+        val formatosEntrada = arrayOf(
+            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()),
+            SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()),
+            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        )
+
+        var fechaNacimiento: Date? = null
+
+        // Intentamos parsear la fecha ingresada para la validación matemática
+        for (formato in formatosEntrada) {
+            try {
+                fechaNacimiento = formato.parse(fechaInput.trim())
+                if (fechaNacimiento != null) break
+            } catch (e: Exception) {
+                // Continúa
+            }
+        }
+
+        if (fechaNacimiento == null) return false // Si no se puede parsear, permitimos que el servidor valide el String
+
+        // Calculamos la edad usando el calendario oficial del sistema
+        val hoy = Calendar.getInstance()
+        val nacimiento = Calendar.getInstance().apply { time = fechaNacimiento }
+
+        var edad = hoy.get(Calendar.YEAR) - nacimiento.get(Calendar.YEAR)
+
+        // Ajuste fino por si no ha pasado su cumpleaños en el año actual
+        if (hoy.get(Calendar.DAY_OF_YEAR) < nacimiento.get(Calendar.DAY_OF_YEAR)) {
+            edad--
+        }
+
+        return edad < 13
     }
 
     fun registrarUsuario(
@@ -55,11 +96,17 @@ class RegistroViewModel : ViewModel() {
             return
         }
 
+        // --- ADUANA DE CONTROL CRÍTICA: VALIDACIÓN DE EDAD ---
+        if (esMenorDe13Anos(fecha)) {
+            mensajeError = "error, poner una edad adecuada"
+            return
+        }
+
         viewModelScope.launch {
             cargando = true
             mensajeError = ""
             try {
-                // LOGICA MEJORADA: Formateamos la fecha para hablar el mismo idioma que Python
+                // Sincronización de formato con la base de datos
                 val fechaFormateada = formatearFechaParaPython(fecha)
 
                 if (rol == "profesor") {
@@ -86,8 +133,8 @@ class RegistroViewModel : ViewModel() {
 
                 onSuccess()
             } catch (e: Exception) {
-                // Si el error fue un 422 u otra cosa, te lo avisará de manera más clara para debuguear
                 mensajeError = "Falla al procesar el registro. Verifica el formato de tus datos."
+                Log.e("error_Api", e.message.toString())
             } finally {
                 cargando = false
             }

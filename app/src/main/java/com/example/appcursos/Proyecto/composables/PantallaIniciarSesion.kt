@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController // NUEVO IMPORT
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -21,6 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.appcursos.Proyecto.viewmodel.LoginViewModel
 import com.example.appcursos.ui.theme.AppCursosTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaIniciarSesion(
     navController: NavHostController,
@@ -28,6 +30,9 @@ fun PantallaIniciarSesion(
 ) {
     var usuario by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    // MEJORA: Controlador nativo para ocultar el teclado antes del salto de pantalla
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
@@ -78,31 +83,32 @@ fun PantallaIniciarSesion(
 
             // MOSTRAR ERROR SI EXISTE (Viene de tu servidor en Render)
             if (viewModel.mensajeError.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = viewModel.mensajeError,
                     color = MaterialTheme.colorScheme.error,
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Bold
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // BOTÓN MEJORADO: Coincide exactamente con la lógica de Roles
+            // BOTÓN INTEGRADO CON DOS PARÁMETROS DINÁMICOS
             Button(
                 onClick = {
-                    // Llamamos al login; el bloque recibe el 'rol' que regresa la base de datos de Render
-                    viewModel.login(usuario, password) { rol ->
-                        // Discriminamos el destino según lo guardado en el backend
+                    // 1. Forzar el cierre del teclado para que no interfiera con la animación de transición
+                    keyboardController?.hide()
+
+                    // 2. Disparar el login
+                    viewModel.login(usuario, password) { rol, idUsuario ->
+                        // CORRECCIÓN: Rutas dinámicas con ID que hacen juego exacto con tu MainActivity.kt
                         if (rol == "profesor") {
-                            // Por ahora simulamos pasar un ID fijo o de prueba (ej: 1) para tu ruta del Main
-                            navController.navigate("gestion_cursos/1") {
+                            navController.navigate("gestion_cursos/$idUsuario") {
                                 popUpTo("login") { inclusive = true }
                             }
                         } else {
-                            // Si es alumno, va al contenido general protegido
-                            navController.navigate("dashboard") {
+                            navController.navigate("dashboard/$idUsuario") {
                                 popUpTo("login") { inclusive = true }
                             }
                         }
@@ -110,11 +116,11 @@ fun PantallaIniciarSesion(
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                enabled = !viewModel.cargando
+                enabled = !viewModel.cargando && usuario.isNotBlank() && password.isNotBlank()
             ) {
                 if (viewModel.cargando) {
                     CircularProgressIndicator(
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(24.dp),
                         strokeWidth = 2.dp
                     )
