@@ -132,4 +132,10 @@ interface ApiCursos {
     suspend fun obtenerActividadesPorCurso(
         @Path("curso_id") cursoId: Int
     ): List<ActividadResponse>
+
+    // --- AGREGADO PARA ALUMNOS ---
+    @GET("alumnos/cursos/{curso_id}/actividades")
+    suspend fun obtenerActividadesParaAlumno(
+        @Path("curso_id") cursoId: Int
+    ): List<ActividadResponse>
 }

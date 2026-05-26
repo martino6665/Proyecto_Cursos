@@ -34,53 +34,37 @@ import com.example.appcursos.ui.theme.AppCursosTheme
 fun PantallaUsuario(
     navController: NavHostController,
     viewModel: AlumnoViewModel = viewModel(),
-    alumnoId: Int
-) {
-    var pestanaSeleccionada by remember { mutableIntStateOf(0) }
+    alumnoId: Int)
+{   var pestanaSeleccionada by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(pestanaSeleccionada) {
-        when (pestanaSeleccionada) {
-            0 -> viewModel.cargarAgendaEscolarEstudiante(alumnoId)
-            1 -> viewModel.cargarCursosDelAlumno(alumnoId)
+    LaunchedEffect(viewModel.listaCursosInscritos) {
+        viewModel.listaCursosInscritos.forEach { curso ->
+            viewModel.cargarActividadesParaAlumno(curso.id)
         }
+    }
+    // Lanzamos carga inicial al entrar
+    LaunchedEffect(Unit) {
+        viewModel.cargarCursosDelAlumno(alumnoId)
+        viewModel.cargarAgendaEscolarEstudiante(alumnoId)
     }
 
     Scaffold(
         bottomBar = {
             NavigationBar(tonalElevation = 8.dp) {
-                NavigationBarItem(
-                    selected = pestanaSeleccionada == 0,
-                    onClick = { pestanaSeleccionada = 0 },
-                    label = { Text("Inicio", fontWeight = FontWeight.Medium) },
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Inicio") }
-                )
-                NavigationBarItem(
-                    selected = pestanaSeleccionada == 1,
-                    onClick = { pestanaSeleccionada = 1 },
-                    label = { Text("Mis Cursos", fontWeight = FontWeight.Medium) },
-                    icon = { Icon(Icons.Default.Book, contentDescription = "Cursos") }
-                )
-                NavigationBarItem(
-                    selected = pestanaSeleccionada == 2,
-                    onClick = { pestanaSeleccionada = 2 },
-                    label = { Text("Perfil", fontWeight = FontWeight.Medium) },
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") }
-                )
+                NavigationBarItem(selected = pestanaSeleccionada == 0, onClick = { pestanaSeleccionada = 0 }, label = { Text("Inicio") }, icon = { Icon(Icons.Default.Home, null) })
+                NavigationBarItem(selected = pestanaSeleccionada == 1, onClick = { pestanaSeleccionada = 1 }, label = { Text("Cursos") }, icon = { Icon(Icons.Default.Book, null) })
+                NavigationBarItem(selected = pestanaSeleccionada == 2, onClick = { pestanaSeleccionada = 2 }, label = { Text("Perfil") }, icon = { Icon(Icons.Default.Person, null) })
             }
         }
     ) { padding ->
-        Box(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-        ) {
+        Box(modifier = Modifier.padding(padding).fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             when (pestanaSeleccionada) {
                 0 -> ContenidoInicio(viewModel)
-                1 -> ContenidoCursos(viewModel, alumnoId)
-                // CORRECCIÓN: Llamada exacta con los 3 parámetros que requiere ContenidoPerfil
-                2 -> ContenidoPerfil(navController, "Estudiante", "@usuario • Estudiante Oficial")
+                // AQUÍ LA CORRECCIÓN: Pasamos el navController
+                1 -> ContenidoCursos(viewModel, alumnoId, navController)
+                2 -> ContenidoPerfil(navController, "Bienvenido", "ID Usuario: $alumnoId")
             }
+
         }
     }
 }
@@ -89,179 +73,53 @@ fun PantallaUsuario(
 @Composable
 fun ContenidoInicio(viewModel: AlumnoViewModel) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(vertical = 16.dp)
     ) {
-        item {
-            Text(
-                text = "Mi Agenda Escolar",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
+        item { Text("Agenda Escolar", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold) }
 
-        item {
-            val pendientes = viewModel.listaAgendaEstudiante.count { it.nota_obtenida == null }
+        // --- 1. TAREAS PUBLICADAS POR EL PROFESOR ---
+        item { Text("Actividades pendientes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (pendientes == 0)
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
-                    else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(20.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(
-                                if (pendientes == 0) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.error,
-                                CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            if (pendientes == 0) Icons.Default.CheckCircle else Icons.Default.NotificationImportant,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            if (pendientes == 0) "¡Estás al día!" else "Actividades en curso",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            if (pendientes == 0) "No tienes tareas pendientes de revisión por tus profesores."
-                            else "Tienes $pendientes actividad(es) enviada(s) esperando calificación en Render.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+        if (viewModel.listaActividadesAlumno.isEmpty()) {
+            item { Text("No hay tareas publicadas actualmente.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline) }
+        } else {
+            items(viewModel.listaActividadesAlumno) { actividad ->
+                Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(actividad.titulo, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text("Fecha límite: ${actividad.fecha_limite ?: "Sin fecha"}", style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
         }
 
-        item {
-            Text(
-                text = "Próximas Actividades en el Calendario",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-        }
+        // --- 2. HISTORIAL DE ENTREGAS (Tu lógica original) ---
+        item { Text("Historial de Entregas", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.outline) }
 
         if (viewModel.cargando) {
-            item {
-                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 30.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(strokeWidth = 3.dp)
-                }
-            }
-        } else if (viewModel.listaAgendaEstudiante.isEmpty()) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(
-                        text = "No se encontraron actividades registradas para tus cursos activos en Render.",
-                        modifier = Modifier.padding(24.dp),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
-            }
+            item { Box(modifier = Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
         } else {
             items(viewModel.listaAgendaEstudiante) { entrega ->
                 val estaCalificada = entrega.nota_obtenida != null
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .background(
-                                    if (estaCalificada) Color(0xFF2E7D32) else Color(0xFFFF9800),
-                                    CircleShape
-                                )
-                        )
+                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(12.dp).background(if (estaCalificada) Color(0xFF2E7D32) else Color(0xFFFF9800), CircleShape))
                         Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1.1f)) {
-                            Text(
-                                text = "Actividad ID: #${entrega.actividad_id}",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Mi Envío: \"${entrega.contenido_entrega}\"",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1
-                            )
-
-                            if (estaCalificada) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "Retroalimentación: ${entrega.comentario_profesor ?: "Sin comentarios."}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Actividad ID: #${entrega.actividad_id}", fontWeight = FontWeight.Bold)
+                            Text("Envío: ${entrega.contenido_entrega}", style = MaterialTheme.typography.bodySmall)
                         }
-
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(
-                                    if (estaCalificada) Color(0xFFE8F5E8) else MaterialTheme.colorScheme.surfaceVariant
-                                )
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = if (estaCalificada) "${entrega.nota_obtenida?.toInt()}" else "Pnd",
-                                fontWeight = FontWeight.Bold,
-                                color = if (estaCalificada) Color(0xFF2E7D32) else MaterialTheme.colorScheme.outline,
-                                fontSize = 14.sp
-                            )
-                        }
+                        Text(if (estaCalificada) "${entrega.nota_obtenida?.toInt()}" else "Pnd", fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
     }
 }
-
 @Composable
-fun ContenidoCursos(viewModel: AlumnoViewModel, alumnoId: Int) {
+fun ContenidoCursos(viewModel: AlumnoViewModel, alumnoId: Int, navController: NavHostController) {
     var mostrarModalInscripcion by remember { mutableStateOf(false) }
     var mostrarConfirmacion by remember { mutableStateOf(false) }
     var cursoSeleccionadoId by remember { mutableIntStateOf(0) }

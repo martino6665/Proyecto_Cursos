@@ -1,5 +1,6 @@
 package com.example.appcursos.Proyecto.composables
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -24,7 +25,6 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun PantallaInicio(navController: NavHostController) {
-    // Bandera para evitar que se dupliquen las pantallas al presionar rápido
     var clickBloqueado by remember { mutableStateOf(false) }
 
     Surface(
@@ -38,74 +38,49 @@ fun PantallaInicio(navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
-            // --- SECCIÓN SUPERIOR: LOGO Y TÍTULO ---
+            // --- SECCIÓN LOGO ---
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Image(
                     painter = painterResource(id = R.drawable.logo),
                     contentDescription = "Logo VisionEducation",
                     modifier = Modifier
-                        .size(150.dp)
-                        .clip(RoundedCornerShape(20.dp)),
+                        .size(140.dp)
+                        .clip(RoundedCornerShape(25.dp)),
                     contentScale = ContentScale.Fit
                 )
-
                 Spacer(modifier = Modifier.height(16.dp))
-
                 Text(
                     text = "VisionEducation",
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.primary,
-                    letterSpacing = 1.sp
-                )
-
-                Text(
-                    text = "Sistema de Gestión Universitaria",
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.outline,
-                    textAlign = TextAlign.Center
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
-            // --- SECCIÓN INFERIOR: ACCIONES ---
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Bienvenido a la plataforma oficial de VisionEducation",
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 24.dp),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                )
+            // --- SECCIÓN ACCIONES ---
+            Column(modifier = Modifier.fillMaxWidth()) {
 
-                // Botón Iniciar Sesión
+                // Botón Iniciar Sesión (Con navegación limpia)
                 Button(
                     onClick = {
                         if (!clickBloqueado) {
                             clickBloqueado = true
-                            navController.navigate("login")
+                            // Mejoramos la navegación: eliminamos la pantalla de inicio del historial
+                            // para que al hacer atrás en el login, no regrese infinitamente.
+                            navController.navigate("login") {
+                                popUpTo("inicio") { inclusive = true }
+                            }
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text(
-                        "Iniciar Sesión",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("Iniciar Sesión", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Botón Registro (CORREGIDO: Sintaxis del borde compatible con Material 3)
+                // Botón Registro
                 OutlinedButton(
                     onClick = {
                         if (!clickBloqueado) {
@@ -113,41 +88,20 @@ fun PantallaInicio(navController: NavHostController) {
                             navController.navigate("registro")
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(width = 2.dp, color = MaterialTheme.colorScheme.primary)
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
                 ) {
-                    Text(
-                        "Crear Perfil Nuevo",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Text("Crear Perfil Nuevo", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
     }
 
-    // Efecto de seguridad mejorado para liberar el botón al regresar o después de un pequeño delay
     LaunchedEffect(clickBloqueado) {
         if (clickBloqueado) {
-            delay(1000) // Si la navegación tarda, libera el botón tras 1 segundo automáticamente
+            delay(1000)
             clickBloqueado = false
         }
-    }
-}
-
-@Preview(
-    showBackground = true,
-    showSystemUi = true,
-    device = "spec:width=411dp,height=891dp"
-)
-@Composable
-fun PreviewPantalla() {
-    AppCursosTheme {
-        val dummyNavController = rememberNavController()
-        PantallaInicio(navController = dummyNavController)
     }
 }
